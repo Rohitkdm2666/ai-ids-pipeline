@@ -1,0 +1,96 @@
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.card {
+  border-radius: 0.8rem;
+  border: none;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.navbar-brand {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+/* Light, modern theme overrides for dark classes used in EJS */
+
+body.bg-dark {
+  background: radial-gradient(circle at top left, #e0f2fe 0, #eef2ff 40%, #f3f4f6 100%) !important;
+  color: #0f172a !important;
+}
+
+.navbar.navbar-dark.bg-black {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.navbar-dark .navbar-brand,
+.navbar-dark .nav-link {
+  color: #0f172a !important;
+}
+
+.navbar-dark .nav-link.active,
+.navbar-dark .nav-link:hover {
+  color: #2563eb !important;
+}
+
+.bg-secondary {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.bg-danger {
+  background: linear-gradient(135deg, #fee2e2, #fecaca) !important;
+  color: #991b1b !important;
+}
+
+.bg-info {
+  background: linear-gradient(135deg, #e0f2fe, #bfdbfe) !important;
+  color: #1d4ed8 !important;
+}
+
+.bg-warning {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  color: #92400e !important;
+}
+
+.table-dark {
+  color: #111827;
+  background-color: #ffffff;
+}
+
+.table-dark thead th {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table-dark tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.badge.bg-danger {
+  background-color: #ef4444 !important;
+}
+
+.badge.bg-success {
+  background-color: #22c55e !important;
+}
+
+.badge.bg-secondary {
+  background-color: #9ca3af !important;
+}
+
+.text-muted {
+  color: #6b7280 !important;
+}
+
+.display-6 {
+  font-weight: 700;
+}
+

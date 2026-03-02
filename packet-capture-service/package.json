@@ -1,0 +1,16 @@
+{
+  "name": "packet-capture-service",
+  "version": "1.0.0",
+  "description": "Network packet capture for IDS - rotating pcap files",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "capture": "node index.js"
+  },
+  "keywords": ["pcap", "ids", "tcpdump", "capture"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.0"
+  }
+}

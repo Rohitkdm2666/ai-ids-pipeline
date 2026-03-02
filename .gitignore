@@ -1,0 +1,42 @@
+# ========================
+# Node
+# ========================
+node_modules/
+
+# ========================
+# Environment files
+# ========================
+.env
+.env.*
+
+# ========================
+# Logs
+# ========================
+*.log
+
+# ========================
+# Ignore Large / Dev Folders
+# ========================
+Data/
+Feature Reductions model training/
+jupitorNotebook/
+
+# ========================
+# Ignore generated runtime files
+# ========================
+*.pcap
+*.csv
+pcap/
+output/
+
+# ========================
+# Python cache
+# ========================
+__pycache__/
+*.pyc
+
+# ========================
+# OS files
+# ========================
+.DS_Store
+Thumbs.db

@@ -1,0 +1,51 @@
+project/
+│
+├── data/
+│   ├── raw/
+│   │   ├── CICIDS2017_Merged.csv
+│   │   └── CICIDS2017/
+│   │       ├── Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv
+│   │       ├── Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv
+│   │       ├── Friday-WorkingHours-Morning.pcap_ISCX.csv
+│   │       ├── Monday-WorkingHours.pcap_ISCX.csv
+│   │       ├── Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv
+│   │       ├── Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv
+│   │       ├── Tuesday-WorkingHours.pcap_ISCX.csv
+│   │       └── Wednesday-workingHours.pcap_ISCX.csv
+│   ├── processed/
+│   │   └── CICIDS2017_Processed.csv
+│   └── external/
+│
+├── notebooks/
+│   └── Untitled.ipynb
+│
+├── src/
+│   ├── data/
+│   │   ├── mergeDataset.py
+│   │   └── feature_reduction_and_timing.py
+│   ├── models/
+│   │   ├── evaluate_ids_models.py
+│   │   ├── train_and_evaluate_ids.py
+│   │   └── train_ids_model.py
+│   ├── pipelines/
+│   └── utils/
+│
+├── models/
+│   ├── trained/
+│   │   └── scaler.pkl
+│   └── checkpoints/
+│
+├── experiments/
+│
+├── app/
+│   ├── backend/
+│   ├── frontend/
+│   └── api/
+│
+├── cybersec/
+│   └── .gitkeep
+│
+├── config/
+├── deployment/
+├── logs/
+└── tests/

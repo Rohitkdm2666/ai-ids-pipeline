@@ -1,0 +1,75 @@
+REAL_PCAP pipeline – Windows-focused updates
+===========================================
+
+This file summarizes the key enhancements made to the packet capture and flow
+extraction services to make the REAL_PCAP pipeline work reliably on Windows.
+
+1. Packet Capture Service (`packet-capture-service/index.js`)
+-------------------------------------------------------------
+- **Cross-platform capture backend**
+  - Uses `dumpcap` (from Wireshark/Npcap) on Windows instead of `tcpdump`.
+  - Uses `tcpdump` on Linux/macOS.
+- **Configurable capture interface and directory**
+  - `NETWORK_INTERFACE` env var selects the interface (e.g. `1` for dumpcap
+    on Windows, or `eth0` on Linux).
+  - `PCAP_DIR` env var controls where `.pcap` files are written; defaults to
+    the local `pcap` folder.
+- **Rotating PCAP files**
+  - Filenames are timestamped with a `PCAP_PREFIX` (default `capture`).
+  - On Windows, rotation is handled by `dumpcap`’s `-b filesize` / `-b files`
+    options (fixed-size rolling files).
+  - On Linux/macOS, rotation is handled by `tcpdump`’s `-C` / `-W` options.
+- **Operational logging**
+  - `[PACKET_CAPTURE_ENV]` prints effective env + paths at startup.
+  - `[PACKET_CAPTURE_STARTED]` logs command, interface, output file and
+    platform.
+  - `[PCAP_DETECTED]` logs how many `.pcap` files exist and shows the last few.
+  - `[PACKET_CAPTURE_ERROR]` and `[PACKET_CAPTURE_HINT]` provide guidance if
+    tcpdump/dumpcap are missing.
+
+2. Flow Extraction Service (`flow-extraction-service/index.js`)
+---------------------------------------------------------------
+- **Robust PCAP-to-CSV extraction on Windows**
+  - On Windows, `runCicFlowMeter` calls a patched Python wrapper
+    (`scripts/cicflowmeter_patched.py`) instead of the stock
+    `cicflowmeter` CLI. This wrapper:
+    - Forces Scapy to read offline pcap files via `PcapReader` with
+      `filter=None` so it no longer depends on `tcpdump`/WinDump.
+    - Patches `FlowSession.process()` so `on_packet_received` is invoked for
+      every packet even though `prn` is `null`, ensuring flows are built.
+    - Normalizes Scapy’s `EDecimal` timestamps and `Decimal` values to
+      plain `float` so `datetime` and `numpy` calculations work.
+    - Stores the CSV output file handle and line-buffers it, then calls
+      `garbage_collect(None)` and flushes/close the file at the end so the
+      CSV is always fully written.
+- **Automatic watcher for new PCAP files**
+  - Uses `chokidar` to watch `PCAP_DIR` (by default the packet capture
+    service’s `pcap` directory).
+  - On every new `.pcap` file, runs CICFlowMeter, parses the resulting CSV,
+    and sends each flow to the IDS backend `/analyze-traffic` endpoint.
+- **Resilient CSV parsing and feature extraction**
+  - Uses `csv-parse/sync` with `relax_column_count` enabled so occasional
+    malformed lines do not crash parsing.
+  - Skips any data rows whose column count does not match the header and
+    logs how many rows were skipped in `[CSV_PARSED_ROWS]`.
+  - Normalizes header names and supports aliases so different CICFlowMeter
+    variants and column namings still map into the unified `FEATURE_COLUMNS`
+    set used by the ML model.
+- **IDS integration and metadata**
+  - Each flow is posted to the IDS backend with a `features` object
+    containing all numeric features expected by the model.
+  - Adds a `metadata` block including `traffic_source: "REAL_PCAP"` and
+    `source: "flow-extraction-service"` so the platform can distinguish
+    REAL_PCAP traffic from other sources.
+  - Logs `[FLOW_SENT_TO_IDS]` before each request and `[IDS_RESPONSE]`
+    when the IDS replies, to aid end-to-end debugging.
+
+3. End-to-end behavior
+----------------------
+- The packet capture service continuously writes rotating `.pcap` files.
+- The flow extraction service watches that directory, converts new `.pcap`
+  files to CICFlowMeter CSV using the Windows-safe wrapper, parses flows
+  robustly, and pushes them to the IDS backend.
+- The IDS backend, once Supabase columns are migrated, can now ingest
+  REAL_PCAP flows into the `traffic_logs` table with the appropriate
+  `traffic_source` and `detection_source` metadata.

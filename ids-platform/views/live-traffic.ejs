@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="bg-dark text-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary">
+      <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="/">AI IDS Platform</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/live-traffic">Live Traffic</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/attack-logs">Attack Logs</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/blocked-ips">Blocked IPs</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container py-4">
+      <h1 class="mb-4">Live Traffic Monitor</h1>
+
+      <div class="card bg-secondary text-light">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">Most Recent Flows</h5>
+            <span class="text-muted small">Showing latest <%= (recentTraffic || []).length %> entries</span>
+          </div>
+          <div class="table-responsive" style="max-height: 480px;">
+            <table class="table table-sm table-dark table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Source IP</th>
+                  <th>Dest IP</th>
+                  <th>Dest Port</th>
+                  <th>Protocol</th>
+                  <th>Source</th>
+                  <th>Attack</th>
+                  <th>Severity</th>
+                  <th>Probability</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (recentTraffic && recentTraffic.length) { %>
+                  <% recentTraffic.forEach(function (t) { %>
+                    <tr>
+                      <td><%= t.analyzed_at && new Date(t.analyzed_at).toLocaleString() %></td>
+                      <td><%= t.src_ip %></td>
+                      <td><%= t.dest_ip %></td>
+                      <td><%= t.dest_port %></td>
+                      <td><%= t.protocol || '-' %></td>
+                      <td>
+                        <% if (t.traffic_source === 'REAL_PCAP') { %>
+                          <span class="badge bg-primary">REAL_PCAP</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary">SYNTHETIC</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (t.is_attack) { %>
+                          <span class="badge bg-danger">Attack</span>
+                        <% } else { %>
+                          <span class="badge bg-success">Normal</span>
+                        <% } %>
+                      </td>
+                      <td class="text-capitalize"><%= t.severity %></td>
+                      <td><%= (t.probability != null) ? t.probability.toFixed(3) : '-' %></td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="9" class="text-center text-muted">No traffic logs yet.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+  </html>
+
