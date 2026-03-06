@@ -12,10 +12,11 @@ Request JSON:
     }
   }
 
-The feature keys must match the processed CICIDS2017 feature columns
-used during training (all columns except 'Label').
+Features must match the top 20 selected from CICIDS2017 (loaded from Data/top20_features.json).
 """
 
+import json
+import logging
 from pathlib import Path
 
 import joblib
@@ -23,6 +24,8 @@ import pandas as pd
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
@@ -34,21 +37,21 @@ def health():
 
 
 def _load_artifacts():
-  """Load trained model, scaler, and feature schema."""
+  """Load trained model, scaler, and top 20 feature schema."""
   script_dir = Path(__file__).parent
   project_root = script_dir.parent.parent
 
   model_path = project_root / "Trained Models" / "Models" / "ids_random_forest_model.pkl"
   scaler_path = project_root / "Trained Models" / "Models" / "scaler.pkl"
-  dataset_path = project_root / "Data" / "Processed Data" / "CICIDS2017_Processed.csv"
+  top20_path = project_root / "Data" / "top20_features.json"
 
   model = joblib.load(model_path)
   scaler = joblib.load(scaler_path)
 
-  # Use header from processed dataset to define feature order
-  df_header = pd.read_csv(dataset_path, nrows=0)
-  feature_columns = [c for c in df_header.columns if c != "Label"]
+  with open(top20_path) as f:
+    feature_columns = json.load(f)
 
+  logger.info("[ML_API] Loaded model, scaler, and %d features from top20_features.json", len(feature_columns))
   return model, scaler, feature_columns
 
 
@@ -77,11 +80,11 @@ def predict():
       return jsonify({"error": "`flow` object is required in request body"}), 400
 
     feature_count = len(flow) if isinstance(flow, dict) else 0
-    print("[ML_API_REQUEST]", {"features_received": feature_count})
+    logger.info("[ML_API_REQUEST] features_received=%d, expected=%d", feature_count, len(FEATURE_COLUMNS))
 
     missing = [col for col in FEATURE_COLUMNS if col not in flow]
     if missing:
-      print("[FEATURE_VALIDATION_ERROR]", {"missing_columns": missing[:10], "missing_count": len(missing)})
+      logger.warning("[FEATURE_VALIDATION_ERROR] missing_columns=%s", missing[:10])
       return (
         jsonify(
           {
@@ -92,10 +95,10 @@ def predict():
         400,
       )
 
-    # Build DataFrame with correct column order
-    row = {col: flow[col] for col in FEATURE_COLUMNS}
-    flow_df = pd.DataFrame([row])
-    print("[ML_API_REQUEST]", {"dataframe_shape": flow_df.shape})
+    # Build DataFrame with correct column order (only top 20, ignore any extra keys)
+    row = {col: float(flow[col]) for col in FEATURE_COLUMNS}
+    flow_df = pd.DataFrame([row], columns=FEATURE_COLUMNS)
+    logger.info("[ML_API_REQUEST] dataframe_shape=%s", flow_df.shape)
 
     # Scale and predict
     flow_scaled = SCALER.transform(flow_df)
@@ -106,7 +109,7 @@ def predict():
     label = "ATTACK DETECTED" if is_attack else "NORMAL TRAFFIC"
     severity = _derive_severity(prob)
 
-    print("[ML_PREDICTION_OUTPUT]", {"prediction": pred, "probability": prob, "is_attack": is_attack})
+    logger.info("[ML_PREDICTION_OUTPUT] prediction=%d probability=%.4f is_attack=%s", pred, prob, is_attack)
 
     return (
       jsonify(
@@ -122,7 +125,7 @@ def predict():
     )
   except Exception as exc:
     import traceback
-    print("[ML_API_ERROR]", {"error": repr(exc), "stack": traceback.format_exc()})
+    logger.exception("[ML_API_ERROR] %s", exc)
     return jsonify({"error": "Prediction failed"}), 500
 
 

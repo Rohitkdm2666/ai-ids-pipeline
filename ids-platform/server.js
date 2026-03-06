@@ -20,9 +20,9 @@ async function testDbConnection() {
     const supabase = require('./config/supabaseClient');
     const { data, error } = await supabase.from('traffic_logs').select('id, traffic_source, detection_source, ml_probability, hybrid_score, suspicion_score').limit(1);
     if (error) throw error;
-    console.log('[DB_CONNECTION_TEST]', { status: 'ok', table: 'traffic_logs', schemaColumns: 'id,traffic_source,detection_source,ml_probability,hybrid_score,suspicion_score' });
+    console.log('[DB_CONNECTION_SUCCESS]', { table: 'traffic_logs', schemaColumns: 'id,traffic_source,detection_source,ml_probability,hybrid_score,suspicion_score' });
   } catch (err) {
-    console.error('[DB_CONNECTION_TEST]', { status: 'FAILED', error: err.message, hint: 'Run supabase_migration_add_columns.sql if traffic_source/detection_source missing' });
+    console.error('[DB_CONNECTION_ERROR]', { error: err.message, hint: 'Run supabase_migration_add_columns.sql if traffic_source/detection_source missing' });
   }
 }
 const cors = require('cors');
@@ -32,13 +32,6 @@ const app = express();
 
 // Basic config
 const PORT = process.env.PORT || 3000;
-
-// View engine setup (EJS)
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
-// Static assets
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Body parsing
 app.use(express.json());
@@ -51,11 +44,9 @@ app.use(cors());
 configureSession(app);
 
 // Routes
-const dashboardRoutes = require('./routes/dashboardRoutes');
+const apiDashboardRoutes = require('./routes/apiDashboard');
 const trafficRoutes = require('./routes/traffic');
-const simulationRoutes = require('./routes/simulationRoutes');
 const authRoutes = require('./routes/authRoutes');
-const evaluationRoutes = require('./routes/evaluationRoutes');
 
 // API key auth for internal services (victim-app, simulation scripts)
 const apiKeyAuth = (req, res, next) => {
@@ -73,28 +64,21 @@ const apiKeyAuth = (req, res, next) => {
 // Public auth routes
 app.use('/', authRoutes);
 
-// Traffic analysis endpoint: allows API key OR session auth
+// JSON API for React dashboard (no auth for localhost)
+app.use('/api', apiDashboardRoutes);
+
+// Traffic analysis endpoint: API key auth (flow_watcher, etc.)
 app.use('/', apiKeyAuth, trafficRoutes);
-// Evaluation endpoints: admin-only (research analysis)
-app.use('/', requireAuth, evaluationRoutes);
 
-// Protected routes (admin-only, session auth required)
-app.use('/', requireAuth, dashboardRoutes);
-app.use('/', requireAuth, simulationRoutes);
-
-// 404 handler
-app.use((req, res, next) => {
-  res.status(404).render('404', { title: 'Page Not Found' });
+// 404 handler (JSON - React dashboard is on port 5173)
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found', hint: 'Dashboard: http://localhost:5173' });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  if (req.accepts('json')) {
-    res.status(500).json({ error: 'Internal server error' });
-  } else {
-    res.status(500).render('500', { title: 'Server Error' });
-  }
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, async () => {

@@ -6,6 +6,31 @@ const {
   fetchBlockedIpByAddress
 } = require('../services/databaseService');
 
+// Hybrid rule thresholds - feature-based detection when ML misses attacks
+// Lower thresholds = more sensitive to flood-like traffic from simulate_attack.py
+const RULE_THRESHOLDS = {
+  TOTAL_FWD_PACKETS: Number(process.env.RULE_TOTAL_FWD_PACKETS) || 80,
+  BWD_PACKETS_PER_S: Number(process.env.RULE_BWD_PACKETS_S) || 50,
+  ML_PROBABILITY: Number(process.env.RULE_ML_PROBABILITY) || 0.6
+};
+
+function ruleBasedDetection(features, mlProbability) {
+  /** Returns { triggered: boolean, reason?: string } */
+  if (!features || typeof features !== 'object') return { triggered: false };
+  const totalFwd = Number(features['Total Fwd Packets']) || 0;
+  const bwdPerS = Number(features['Bwd Packets/s']) || 0;
+  if (totalFwd > RULE_THRESHOLDS.TOTAL_FWD_PACKETS) {
+    return { triggered: true, reason: `Total Fwd Packets (${totalFwd}) > ${RULE_THRESHOLDS.TOTAL_FWD_PACKETS}` };
+  }
+  if (bwdPerS > RULE_THRESHOLDS.BWD_PACKETS_PER_S) {
+    return { triggered: true, reason: `Bwd Packets/s (${bwdPerS.toFixed(1)}) > ${RULE_THRESHOLDS.BWD_PACKETS_PER_S}` };
+  }
+  if (mlProbability > RULE_THRESHOLDS.ML_PROBABILITY) {
+    return { triggered: true, reason: `ML probability (${mlProbability.toFixed(2)}) > ${RULE_THRESHOLDS.ML_PROBABILITY}` };
+  }
+  return { triggered: false };
+}
+
 function deriveSeverity(probability) {
   if (probability >= 0.9) return 'critical';
   if (probability >= 0.7) return 'high';
@@ -142,7 +167,19 @@ async function analyzeTraffic(req, res) {
     const mlAttack = mlProbability >= mlAttackThreshold;
     const ruleAttack = ruleScoreNorm >= ruleAttackThreshold;
 
-    const isAttackHybrid = hybridScore >= hybridThreshold;
+    // Feature-based rule detection (Total Fwd Packets, Bwd Packets/s, probability)
+    const ruleDetection = ruleBasedDetection(features, mlProbability);
+    const ruleFeatureAttack = ruleDetection.triggered;
+    if (ruleFeatureAttack) {
+      console.log('[HYBRID_DETECTION_TRIGGERED]', {
+        reason: ruleDetection.reason,
+        src_ip,
+        ml_probability: mlProbability
+      });
+    }
+
+    // Final: ML OR rule-based OR feature-based
+    const isAttackHybrid = hybridScore >= hybridThreshold || ruleFeatureAttack;
 
     // Determine which detector "fired" for research logging.
     let detectionSource = 'ML';
@@ -165,6 +202,16 @@ async function analyzeTraffic(req, res) {
     }
 
     const isAttack = isAttackHybrid;
+
+    console.log('[ATTACK_CLASSIFICATION]', {
+      src_ip,
+      dest_ip,
+      probability: mlProbability,
+      ml_prediction: mlAttackFromModel,
+      rule_triggered: ruleDetection.triggered,
+      final_attack_decision: isAttackHybrid,
+      detection_source: detectionSource
+    });
 
     const analyzedAt = new Date().toISOString();
 
@@ -191,6 +238,7 @@ async function analyzeTraffic(req, res) {
 
     let trafficLog;
     try {
+      console.log('[DB_INSERT_START]', { table: 'traffic_logs', src_ip, dest_ip, dest_port });
       trafficLog = await insertTrafficLog(trafficLogPayload);
       console.log('[DB_TRAFFIC_INSERT_SUCCESS]', { id: trafficLog?.id, traffic_source: trafficSource });
     } catch (dbErr) {
@@ -203,6 +251,7 @@ async function analyzeTraffic(req, res) {
 
     // 3. If attack, insert into attack_logs and blocked_ips
     if (isAttack) {
+      console.log('[DB_INSERT_START]', { table: 'attack_logs', src_ip, dest_ip, dest_port });
       attackLog = await insertAttackLog({
         traffic_log_id: trafficLog.id,
         src_ip,

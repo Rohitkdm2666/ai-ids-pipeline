@@ -1,0 +1,22 @@
+[
+  "Fwd Packet Length Max",
+  "Average Packet Size",
+  "Subflow Fwd Bytes",
+  "Fwd Packet Length Mean",
+  "Bwd Packets/s",
+  "Avg Fwd Segment Size",
+  "Packet Length Std",
+  "Total Length of Fwd Packets",
+  "Max Packet Length",
+  "Init_Win_bytes_forward",
+  "PSH Flag Count",
+  "Bwd Packet Length Max",
+  "Packet Length Mean",
+  "Fwd Header Length.1",
+  "Avg Bwd Segment Size",
+  "Subflow Bwd Bytes",
+  "Bwd Packet Length Mean",
+  "Bwd Packet Length Std",
+  "ACK Flag Count",
+  "Total Fwd Packets"
+]

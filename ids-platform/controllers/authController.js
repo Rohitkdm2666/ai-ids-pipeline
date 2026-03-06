@@ -21,51 +21,19 @@ async function getPasswordHash() {
   return bcrypt.hash('admin123', salt);
 }
 
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:5173';
+
 async function showLogin(req, res) {
-  if (req.session && req.session.user && req.session.user.isAdmin) {
-    return res.redirect('/');
-  }
-  res.render('login', { title: 'Admin Login', error: null });
+  return res.redirect(DASHBOARD_URL);
 }
 
 async function handleLogin(req, res) {
-  const { username, password } = req.body || {};
-
-  if (!username || !password) {
-    return res.status(400).render('login', {
-      title: 'Admin Login',
-      error: 'Username and password are required'
-    });
-  }
-
-  if (username !== ADMIN_USERNAME) {
-    return res.status(401).render('login', {
-      title: 'Admin Login',
-      error: 'Invalid credentials'
-    });
-  }
-
-  const hash = await getPasswordHash();
-  const valid = await verifyPassword(password, hash);
-
-  if (!valid) {
-    return res.status(401).render('login', {
-      title: 'Admin Login',
-      error: 'Invalid credentials'
-    });
-  }
-
-  req.session.user = {
-    username,
-    isAdmin: true
-  };
-
-  return res.redirect('/');
+  return res.redirect(DASHBOARD_URL);
 }
 
 function handleLogout(req, res) {
   req.session.destroy(() => {
-    res.redirect('/login');
+    res.redirect(DASHBOARD_URL);
   });
 }
 

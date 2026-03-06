@@ -8,8 +8,8 @@ const apiRoutes = require('./routes/api');
 
 const app = express();
 
-const PORT = process.env.PORT || 4000;
-const SERVER_IP = process.env.SERVER_IP || '192.168.1.100';
+const PORT = process.env.PORT || 8000;
+const SERVER_IP = process.env.SERVER_IP || '0.0.0.0';
 
 app.set('serverIp', SERVER_IP);
 
@@ -59,8 +59,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Victim App running on http://localhost:${PORT}`);
-  console.log(`Server IP configured as: ${SERVER_IP}`);
+app.listen(PORT, SERVER_IP, () => {
+  console.log(`Victim App running on http://localhost:${PORT} (bound to ${SERVER_IP})`);
   console.log(`IDS Backend: ${process.env.IDS_BACKEND_URL || 'http://localhost:3000'}`);
 });
