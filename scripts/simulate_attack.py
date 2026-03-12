@@ -25,7 +25,7 @@ except ImportError:
     print("Install requests: pip install requests")
     sys.exit(1)
 
-TARGET = "http://localhost:8000"
+TARGET = "http://localhost:4000"
 NUM_THREADS = 200
 REQUESTS_PER_THREAD = 20  # 200 * 20 = 4000 requests total; minimal delay = flood
 PAYLOAD_SIZES = [0, 500, 1000, 2000, 5000, 10000, 20000]  # Large payloads for variance
