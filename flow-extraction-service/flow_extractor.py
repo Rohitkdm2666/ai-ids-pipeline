@@ -32,7 +32,7 @@ def load_top20_features():
     script_dir = Path(__file__).parent
     # flow_extractor.py lives in flow-extraction-service/; project root is parent
     project_root = script_dir.parent
-    top20_path = project_root / "Data" / "top20_features.json"
+    top20_path = project_root / "ml-service" / "model" / "top20_features.json"
     with open(top20_path) as f:
         return json.load(f)
 

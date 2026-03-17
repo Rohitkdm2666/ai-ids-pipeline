@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
-PCAP_DIR = PROJECT_ROOT / "data" / "pcap"
+
+# Read PCAP_DIR from environment or use default
+PCAP_DIR = Path(os.environ.get("PCAP_DIR", PROJECT_ROOT / "data" / "pcap"))
 FLOWS_DIR = PROJECT_ROOT / "data" / "flows"
 FLOWS_CSV = FLOWS_DIR / "flows.csv"
 STABILITY_SECONDS = float(os.environ.get("PCAP_STABILITY_SECONDS", "3"))
@@ -32,7 +34,7 @@ pending = {}  # path -> (mtime, size, stable_since)
 
 
 def load_top20():
-    path = PROJECT_ROOT / "Data" / "top20_features.json"
+    path = PROJECT_ROOT / "ml-service" / "model" / "top20_features.json"
     with open(path) as f:
         return json.load(f)
 
